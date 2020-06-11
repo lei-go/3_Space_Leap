@@ -6,6 +6,8 @@ public class Rocket : MonoBehaviour
 {
     Rigidbody rigidbody;
     AudioSource audioSource;
+    [SerializeField] float rcsThrust = 120f;
+    [SerializeField] float mainThrust = 120f;
 
     // Start is called before the first frame update
     void Start()
@@ -17,15 +19,17 @@ public class Rocket : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        ProcessInput();
+        Thrust();
+        Rotate();
     }
-
-    void ProcessInput()
+    private void Thrust()
     {
+        float thrustSpeed = Time.deltaTime * mainThrust;
+
         if (Input.GetKey(KeyCode.Space)) //can thrust while rotating
         {
-            print("Thrusting");
-            rigidbody.AddRelativeForce(Vector3.up);
+            //print("Thrusting");
+            rigidbody.AddRelativeForce(Vector3.up * thrustSpeed);
             if (!audioSource.isPlaying)
             {
                 audioSource.Play();
@@ -35,17 +39,38 @@ public class Rocket : MonoBehaviour
         {
             audioSource.Stop();
         }
+    }
 
-        if (Input.GetKey(KeyCode.A)) //can thrust while rotating
+    private void Rotate()
+    {
+        rigidbody.freezeRotation = true; //take manual control of the movement
+        float rotationSpeed = Time.deltaTime * rcsThrust;
+
+        if (Input.GetKey(KeyCode.D)) //can thrust while rotating
         {
-            print("Pushing Left Thruster");
-            transform.Rotate(-Vector3.forward);
+            //print("Pushing Left Thruster");
+            transform.Rotate(-Vector3.forward * rotationSpeed);
         }
-        else if (Input.GetKey(KeyCode.D)) //can thrust while rotating
+        else if (Input.GetKey(KeyCode.A)) //can thrust while rotating
         {
-            print("Pushing Right Thruster");
-            transform.Rotate(Vector3.forward);
+            //print("Pushing Right Thruster");
+            transform.Rotate(Vector3.forward * rotationSpeed);
         }
 
+        rigidbody.freezeRotation = false; //let physics controls it
+    }
+
+    private void OnCollisionEnter(Collision collision) 
+    {
+        //print("collided");
+        switch (collision.gameObject.tag)
+        {
+            case "Friendly": 
+                print("Still OK");
+                break;
+            default:
+                print("dead");
+                break;
+        }
     }
 }
