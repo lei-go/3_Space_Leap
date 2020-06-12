@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class Rocket : MonoBehaviour
 {
@@ -8,6 +9,9 @@ public class Rocket : MonoBehaviour
     AudioSource audioSource;
     [SerializeField] float rcsThrust = 120f;
     [SerializeField] float mainThrust = 120f;
+
+    enum State{Alive, Dying, Transcending}
+    State state = State.Alive;
 
     // Start is called before the first frame update
     void Start()
@@ -19,9 +23,14 @@ public class Rocket : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        Thrust();
-        Rotate();
+        // todo sound still playing while dead, need fix
+        if (state == State.Alive)
+        {
+            Thrust();
+            Rotate();
+        }
     }
+
     private void Thrust()
     {
         float thrustSpeed = Time.deltaTime * mainThrust;
@@ -62,15 +71,35 @@ public class Rocket : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision) 
     {
+        //god operation
+        if (state != State.Alive) {return;}
+
         //print("collided");
         switch (collision.gameObject.tag)
         {
             case "Friendly": 
                 print("Still OK");
                 break;
+            case "Finish":
+                state = State.Transcending;
+                print("finish");
+                Invoke("LoadNextScene", 1f);
+                break;
             default:
+                state = State.Dying;
                 print("dead");
+                Invoke("LoadBeginScene", 1f);
                 break;
         }
+    }
+
+    private void LoadBeginScene()
+    {
+        SceneManager.LoadScene(0);
+    }
+
+    private void LoadNextScene()
+    {
+        SceneManager.LoadScene(1);
     }
 }
