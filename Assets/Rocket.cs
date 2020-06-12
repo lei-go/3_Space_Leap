@@ -9,6 +9,13 @@ public class Rocket : MonoBehaviour
     AudioSource audioSource;
     [SerializeField] float rcsThrust = 120f;
     [SerializeField] float mainThrust = 120f;
+    [SerializeField] AudioClip engineSound;
+    [SerializeField] AudioClip successSound;
+    [SerializeField] AudioClip collisionSound;
+    [SerializeField] ParticleSystem engineParticle;
+    [SerializeField] ParticleSystem successParticle;
+    [SerializeField] ParticleSystem collisionParticle;
+    [SerializeField] float levelDelay = 1.7f;
 
     enum State{Alive, Dying, Transcending}
     State state = State.Alive;
@@ -30,6 +37,26 @@ public class Rocket : MonoBehaviour
             Rotate();
         }
     }
+    
+    private void OnCollisionEnter(Collision collision) 
+    {
+        //god operation
+        if (state != State.Alive) {return;}
+
+        //print("collided");
+        switch (collision.gameObject.tag)
+        {
+            case "Friendly": 
+                print("Still OK");
+                break;
+            case "Finish":
+                StartTranscending();
+                break;
+            default:
+                StartDying(); //not a good name apologize
+                break;
+        }
+    }
 
     private void Thrust()
     {
@@ -41,12 +68,14 @@ public class Rocket : MonoBehaviour
             rigidbody.AddRelativeForce(Vector3.up * thrustSpeed);
             if (!audioSource.isPlaying)
             {
-                audioSource.Play();
+                audioSource.PlayOneShot(engineSound);
             }
+            if (!engineParticle.isPlaying) {engineParticle.Play();}
         }
         else
         {
             audioSource.Stop();
+            engineParticle.Stop();
         }
     }
 
@@ -69,28 +98,26 @@ public class Rocket : MonoBehaviour
         rigidbody.freezeRotation = false; //let physics controls it
     }
 
-    private void OnCollisionEnter(Collision collision) 
-    {
-        //god operation
-        if (state != State.Alive) {return;}
+    
 
-        //print("collided");
-        switch (collision.gameObject.tag)
-        {
-            case "Friendly": 
-                print("Still OK");
-                break;
-            case "Finish":
-                state = State.Transcending;
-                print("finish");
-                Invoke("LoadNextScene", 1f);
-                break;
-            default:
-                state = State.Dying;
-                print("dead");
-                Invoke("LoadBeginScene", 1f);
-                break;
-        }
+    private void StartDying()
+    {
+        state = State.Dying;
+        audioSource.Stop();
+        print("dead");
+        audioSource.PlayOneShot(collisionSound);
+        collisionParticle.Play();
+        Invoke("LoadBeginScene", levelDelay);
+    }
+
+    private void StartTranscending()
+    {
+        state = State.Transcending;
+        audioSource.Stop();
+        print("finish");
+        audioSource.PlayOneShot(successSound);
+        collisionParticle.Play();
+        Invoke("LoadNextScene", levelDelay);
     }
 
     private void LoadBeginScene()
