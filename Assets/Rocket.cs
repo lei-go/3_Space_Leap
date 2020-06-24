@@ -17,6 +17,8 @@ public class Rocket : MonoBehaviour
     [SerializeField] ParticleSystem collisionParticle;
     [SerializeField] float levelDelay = 1.7f;
 
+    bool isCollisionEnabled = true;
+
     enum State{Alive, Dying, Transcending}
     State state = State.Alive;
 
@@ -36,12 +38,29 @@ public class Rocket : MonoBehaviour
             Thrust();
             Rotate();
         }
+        
+        if (Debug.isDebugBuild) //so that these keys wont work in the final released build 
+        {
+            RespondToDebugKeys();
+        }
     }
     
+    private void RespondToDebugKeys()
+    {
+        if (Input.GetKeyDown(KeyCode.L)) //use GerKeyDown instead of GetKey for one-time press
+        {
+            LoadNextScene();
+        }
+        else if (Input.GetKeyDown(KeyCode.C))
+        {
+            isCollisionEnabled = !isCollisionEnabled;
+        }
+    }
+
     private void OnCollisionEnter(Collision collision) 
     {
         //god operation
-        if (state != State.Alive) {return;}
+        if (state != State.Alive || !isCollisionEnabled) {return;}
 
         //print("collided");
         switch (collision.gameObject.tag)
@@ -74,14 +93,16 @@ public class Rocket : MonoBehaviour
         }
         else
         {
-            audioSource.Stop();
-            engineParticle.Stop();
+            StopRespondingToThrust();
         }
     }
-
     private void Rotate()
     {
-        rigidbody.freezeRotation = true; //take manual control of the movement
+        //the following two lines are just too confusing to achieve what could be simple
+        //rigidbody.freezeRotation = true; //take manual control of the movement
+        //rigidbody.freezeRotation = false; //let physics controls it
+        rigidbody.angularVelocity = Vector3.zero; //this is enough to stop unwanted rotation at the rotate phase 
+
         float rotationSpeed = Time.deltaTime * rcsThrust;
 
         if (Input.GetKey(KeyCode.D)) //can thrust while rotating
@@ -95,10 +116,14 @@ public class Rocket : MonoBehaviour
             transform.Rotate(Vector3.forward * rotationSpeed);
         }
 
-        rigidbody.freezeRotation = false; //let physics controls it
+        
     }
 
-    
+    private void StopRespondingToThrust()
+    {
+        audioSource.Stop();
+        engineParticle.Stop();
+    }
 
     private void StartDying()
     {
@@ -107,7 +132,7 @@ public class Rocket : MonoBehaviour
         print("dead");
         audioSource.PlayOneShot(collisionSound);
         collisionParticle.Play();
-        Invoke("LoadBeginScene", levelDelay);
+        Invoke("ReloadCurrentScene", levelDelay);
     }
 
     private void StartTranscending()
@@ -124,9 +149,16 @@ public class Rocket : MonoBehaviour
     {
         SceneManager.LoadScene(0);
     }
-
+    private void ReloadCurrentScene()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
     private void LoadNextScene()
     {
-        SceneManager.LoadScene(1);
+        int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
+        int nextSceneIndex = currentSceneIndex + 1;
+        print(SceneManager.sceneCountInBuildSettings);
+        if (nextSceneIndex == SceneManager.sceneCountInBuildSettings) {nextSceneIndex = 0;} 
+        SceneManager.LoadScene(nextSceneIndex);                        
     }
 }

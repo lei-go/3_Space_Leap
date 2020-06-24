@@ -26,6 +26,6 @@ public class Oscillator : MonoBehaviour
         if (period > Mathf.Epsilon) {cycles = Time.time / period;}
         movementFactor = Mathf.Sin(cycles * 2 * Mathf.PI);
         Vector3 offset = movementVector * movementFactor;
-        transform.position = startingPos + offset;
+        this.transform.position = startingPos + offset;
     }
 }
